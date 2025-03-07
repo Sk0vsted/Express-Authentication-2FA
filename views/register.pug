@@ -1,0 +1,23 @@
+extends layout
+
+block content
+	h1= title
+	form(action='/users/register' method='post')
+		p
+			label(for='email') Email
+			br
+			input(name='email' required type='email')#email
+		p
+			label(for='password') Password
+			br
+			input(name='password' required type='password')#password
+		p
+			label(for='password') Confirm Password
+			br
+			input(name='confirmPassword' required type='password')#confirmPassword
+		p
+			label(for='bio') Bio
+			br
+			textarea(cols='48' id='bio' name='bio' required rows=4)
+		p
+			input(type='submit' value='Register')

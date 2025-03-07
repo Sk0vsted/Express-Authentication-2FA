@@ -1,0 +1,172 @@
+extends layout
+
+block content
+    h1= title
+    p Welcome to #{title}
+
+    // 🛡️ Two-Factor Authentication (2FA)
+    h2 Two-Factor Authentication (2FA)
+
+    if user.two_factor_enabled
+        p ✅ 2FA is currently <strong>enabled</strong>.
+        button#disable-2fa(type="button") Disable 2FA
+    else
+        p ⚠️ 2FA is currently <strong>disabled</strong>.
+        button#enable-2fa(type="button") Enable 2FA
+
+    p
+        a(href="/users/logout" class="logout-button") Log Out
+    // 📸 QR Code Display (Only visible when enabling 2FA)
+    div#qr-container(style="display: none;")
+        h3 Scan the QR Code to enable 2FA
+        img#qrcode(src='' alt='QR Code')
+        p Secret Key: 
+            code#secret
+
+        form(id="verify-2fa-form" style="margin-top: 10px;")
+            p
+                label(for="otp") Enter OTP from Google Authenticator:
+                br
+                input(type="text" id="otp" name="otp" required minlength="6" maxlength="6")
+            p
+                button(type="submit") Verify & Enable 2FA
+
+    div 
+        h2 School grades and courses
+        p To see your grades and courses, please click the button below
+        button#gradesCourses(type="button") Go to courses and grades
+
+    // 🚀 Vælg by og vis detaljer via AJAX
+    h1 Select a City
+    label(for='cityName') Choose a city:
+    select(name='cityName' id='cityName' required)
+        if cities.length > 0
+            each city in cities
+                option(value=city.name)= city.name
+        else
+            option(disabled selected) No cities available
+
+    // 🔍 By detaljer område
+    div#city-details(style='margin-top: 20px;')
+        h2 City Details
+        p Name: 
+            span#city-name.placeholder -
+        p Country Code: 
+            span#city-countrycode.placeholder -
+        p District: 
+            span#city-district.placeholder -
+        p Population: 
+            span#city-population.placeholder -
+
+    script.
+        document.addEventListener('DOMContentLoaded', () => {
+            const enableButton = document.getElementById("enable-2fa");
+            const disableButton = document.getElementById("disable-2fa");
+            const qrContainer = document.getElementById("qr-container");
+            const qrCode = document.getElementById("qrcode");
+            const secretKey = document.getElementById("secret");
+            const citySelect = document.getElementById('cityName');
+            const coursesGrades = document.getElementById('gradesCourses');
+
+            coursesGrades.addEventListener("click", () => {
+                window.location.href = "/users/courses-grades";
+            });
+
+            if (enableButton) {
+                enableButton.addEventListener("click", async () => {
+                    const response = await fetch("/users/enable-2fa", {
+                        method: "POST",
+                        credentials: "include"
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        qrContainer.style.display = "block";
+                        qrCode.src = data.qrCodeUrl;
+                        secretKey.textContent = data.secret;
+                    } else {
+                        alert("❌ Error: " + data.error);
+                    }
+                });
+            }
+
+            // ✅ Verify OTP and Update Status
+            document.getElementById("verify-2fa-form")?.addEventListener("submit", async function(event) {
+                event.preventDefault();
+
+                const otp = document.getElementById("otp").value;
+                const response = await fetch("/users/verify-2fa", {
+                    method: "POST",
+                    credentials: "include",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ token: otp })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert("✅ 2FA Enabled Successfully!");
+                    document.getElementById("enable-2fa").style.display = "none";
+                    document.getElementById("disable-2fa").style.display = "block";
+                    qrContainer.style.display = "none"; // Hide QR code after verification
+                } else {
+                    alert("❌ Invalid OTP: " + data.error);
+                }
+            });
+
+            if (disableButton) {
+                disableButton.addEventListener("click", async () => {
+                    const response = await fetch("/users/disable-2fa", {
+                        method: "POST",
+                        credentials: "include"
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        alert("✅ 2FA Disabled Successfully!");
+                        document.getElementById("enable-2fa").style.display = "block";
+                        document.getElementById("disable-2fa").style.display = "none";
+                    } else {
+                        alert("❌ Error: " + data.error);
+                    }
+                });
+            }
+
+            // 🌍 Fetch City Details on Selection
+            const updateCityDetails = async (cityName) => {
+                if (!cityName) return;
+
+                console.log("Sending request for city:", cityName); // Debug log
+
+                try {
+                    const response = await fetch(`/getCityDetails?cityName=${encodeURIComponent(cityName)}`);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    console.log("✅ City Details Received:", data);
+
+                    document.getElementById('city-name').textContent = data.name || 'N/A';
+                    document.getElementById('city-countrycode').textContent = data.countrycode || 'N/A';
+                    document.getElementById('city-district').textContent = data.district || 'N/A';
+                    document.getElementById('city-population').textContent = data.population || 'N/A';
+                } catch (error) {
+                    console.error("❌ Error fetching city details:", error);
+                    alert("Error fetching city details: " + error.message);
+                }
+            };
+
+            // 🎯 Event Listener for City Selection
+            citySelect?.addEventListener('change', (e) => {
+                updateCityDetails(e.target.value);
+            });
+
+            // 🏙️ Load city details if one is selected initially
+            if (citySelect?.value) {
+                updateCityDetails(citySelect.value);
+            }
+        });

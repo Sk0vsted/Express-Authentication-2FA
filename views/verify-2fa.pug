@@ -1,0 +1,41 @@
+extends layout
+
+block content
+    h1 2FA Verification Required
+
+    p Please enter the One-Time Password (OTP) from Google Authenticator:
+
+    form(id="verify-otp-form")
+        p
+            label(for="otp") OTP:
+            br
+            input(type="text" id="otp" name="otp" required minlength="6" maxlength="6")
+        p
+            button(type="submit") Verify OTP
+
+    script.
+        document.getElementById("verify-otp-form").addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const otp = document.getElementById("otp").value;
+
+            if (!otp || otp.length !== 6) {
+                alert("❌ Please enter a valid 6-digit OTP");
+                return;
+            }
+
+            const response = await fetch("/users/verify-login-otp", {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: otp })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                window.location.href = data.redirect;
+            } else {
+                alert("❌ Invalid OTP: " + data.error);
+            }
+        });

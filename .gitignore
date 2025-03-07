@@ -1,0 +1,15 @@
+.sql
+.db
+db/
+
+# Dependency directories
+node_modules/
+
+# dotenv environment variables file
+.env
+
+# concrete project specific exclusions
+setup.sql
+countries.sql
+city.sql                 
+countrylanguage.sql      

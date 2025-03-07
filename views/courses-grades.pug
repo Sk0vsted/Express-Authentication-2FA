@@ -1,0 +1,78 @@
+extends layout
+
+block content
+    h1= title
+    p Welcome to #{title}
+
+    if user.admin
+        h2 Add New Grade
+        form(id="update-grade-form")
+            p
+                label(for="user-email") Select User:
+                select(name="user-email" id="user-email" required)
+                    each userItem in users
+                        option(value=userItem.email)= userItem.email
+
+            p
+                label(for="course-name") Select Course:
+                select(name="course-name" id="course-name" required)
+                    each courseItem in courses
+                        option(value=courseItem.course)= courseItem.course
+
+            p
+                label(for="new-grade") Select Grade:
+                select(name="new-grade" id="new-grade" required)
+                    option(value="-3") -3
+                    option(value="00") 00
+                    option(value="02") 02
+                    option(value="4") 4
+                    option(value="7") 7
+                    option(value="10") 10
+                    option(value="12") 12
+
+            p
+                button(type="submit") Add Grade
+
+    // 📊 Course Grades Table
+    h2 Grades Overview
+    table(border="1")
+        thead
+            tr
+                if user.admin
+                    th Email
+                th Course
+                th Grade
+                th Date
+        tbody
+            each grade in grades
+                tr
+                    if user.admin
+                        td= grade.email
+                    td= grade.course
+                    td= grade.grade
+                    td= new Date(grade.juncture).toLocaleDateString()
+
+    script.
+        document.getElementById("update-grade-form")?.addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const email = document.getElementById("user-email").value;
+            const course = document.getElementById("course-name").value;
+            const newGrade = document.getElementById("new-grade").value;
+
+            const response = await fetch("/users/update-grade", {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, course, newGrade })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert("✅ Grade added successfully!");
+                window.location.reload(); // Refresh the page to show updated grades
+            } else {
+                alert("❌ Error: " + data.error);
+            }
+        });

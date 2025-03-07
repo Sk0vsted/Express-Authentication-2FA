@@ -1,0 +1,53 @@
+extends layout
+
+block content
+	h1= title
+	form(id="login-form")
+		p
+			label(for='email') Email
+			br
+			input(name='email' required type='email')#email
+		p
+			label(for='password') Password
+			br
+			input(name='password' required type='password')#password
+		p#otp-container(style="display: none;")
+			label(for='otp') OTP (Google Authenticator)
+			br
+			input(name='otp' type='text' id="otp" minlength="6" maxlength="6")
+
+		p
+			button(type='submit') Login
+
+	script.
+		document.getElementById("login-form").addEventListener("submit", async function(event) {
+			event.preventDefault();
+
+			const email = document.getElementById("email").value;
+			const password = document.getElementById("password").value;
+			const otpField = document.getElementById("otp");
+			const otp = otpField ? otpField.value : "";
+
+			const response = await fetch("/users/login", {
+				method: "POST",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify({ email, password, otp })
+			});
+
+			const data = await response.json();
+
+			if (response.ok) {
+				console.log("✅ Login successful", data);
+				window.location.href = data.redirect; 
+			} else {
+				console.error("❌ Login failed", data.error);
+				alert("Login failed: " + data.error);
+
+				if (data.error.includes("2FA required")) {
+					document.getElementById("otp-container").style.display = "block";
+				}
+			}
+		});

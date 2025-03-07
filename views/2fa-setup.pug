@@ -1,0 +1,55 @@
+extends layout
+
+block content
+    h1 Enable Two-Factor Authentication (2FA)
+
+    p Scan the QR code below with Google Authenticator:
+
+    img#qrcode(src='')
+
+    p If you prefer, you can manually enter this secret into Google Authenticator:
+    code#secret
+
+    form(id="verify-2fa-form")
+        p
+            label(for="otp") Enter the 6-digit OTP from Google Authenticator:
+            br
+            input(type="text" id="otp" name="otp" required minlength="6" maxlength="6")
+        p
+            button(type="submit") Verify & Enable 2FA
+
+    script.
+        async function setup2FA() {
+            const response = await fetch("/users/enable-2fa", { method: "POST", credentials: "include" });
+            const data = await response.json();
+
+            if (response.ok) {
+                document.getElementById("qrcode").src = data.qrCodeUrl;
+                document.getElementById("secret").textContent = data.secret;
+            } else {
+                alert("Error: " + data.error);
+            }
+        }
+
+        document.getElementById("verify-2fa-form").addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const otp = document.getElementById("otp").value;
+            const response = await fetch("/users/verify-2fa", {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: otp })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert("✅ 2FA Enabled Successfully!");
+                window.location.href = "/users/profile";
+            } else {
+                alert("❌ Invalid OTP: " + data.error);
+            }
+        });
+
+        setup2FA();
