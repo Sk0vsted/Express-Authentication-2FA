@@ -46,6 +46,7 @@ This is a secure Node.js web application built with Express, featuring authentic
 ``npm test``
 
 # API Endpoints
+It is very important to note that most of the endpoints is on path ``/users`` 
 
 ## Authentication
 | Method | Endpoint           | Description          |
